@@ -20,7 +20,7 @@ def _int64_feature(value):
 def _bytes_feature(value):
   return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
 
-def slice_signal(signal, window_size, stride=0.5):
+def slice_signal(signal, window_size, stride=1.0):
     """ Return windows of the given signal by sweeping in stride fractions
         of window
     """
@@ -34,15 +34,24 @@ def slice_signal(signal, window_size, stride=0.5):
         if end_i - beg_i < window_size:
             break
         slice_ = signal[beg_i:end_i]
+        #magnitude of power spectrum
+        hamm = np.hamming(len(slice_))
+        slice_ = np.abs(np.fft.fft(hamm*slice_))
+
         if slice_.shape[0] == window_size:
             slices.append(slice_)
-    return np.array(slices, dtype=np.int32)
+    return np.array(slices, dtype=np.float32)
 
-def read_and_slice(filename, wav_canvas_size, stride=0.5):
+def read_and_slice(filename, wav_canvas_size, stride=1.0):
     fm, wav_data = wavfile.read(filename)
     if fm != 16000:
         raise ValueError('Sampling rate is expected to be 16kHz!')
-    signals = slice_signal(wav_data, wav_canvas_size, stride)
+    #signals = slice_signal(wav_data, wav_canvas_size, stride)
+    hamm = np.hamming(len(wav_data))
+    signals = np.abs(np.fft.fft(hamm*wav_data))
+
+    #signals = wav_data
+    
     return signals
 
 
@@ -103,7 +112,7 @@ def main(opts):
                                                               ' ' * 10),
                       end='\r')
                 sys.stdout.flush()
-                encoder_proc(wav_file, noisy_dir, out_file, 2 ** 14)
+                encoder_proc(wav_file, noisy_dir, out_file, 1.0)
         out_file.close()
         end_enc_t = timeit.default_timer() - beg_enc_t
         print('')

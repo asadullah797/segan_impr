@@ -15,7 +15,7 @@ flags.DEFINE_integer("seed",111, "Random seed (Def: 111).")
 flags.DEFINE_integer("epoch", 150, "Epochs to train (Def: 150).")
 flags.DEFINE_integer("batch_size", 150, "Batch size (Def: 150).")
 flags.DEFINE_integer("save_freq", 50, "Batch save freq (Def: 50).")
-flags.DEFINE_integer("canvas_size", 2**14, "Canvas size (Def: 2^14).")
+flags.DEFINE_integer("canvas_size", 1.0, "Canvas size (Def: 2^14).")
 flags.DEFINE_integer("denoise_epoch", 5, "Epoch where noise in disc is "
                                           "removed (Def: 5).")
 flags.DEFINE_integer("l1_remove_epoch", 150, "Epoch where L1 in G is "
@@ -103,7 +103,8 @@ def main(_):
             wavname = FLAGS.test_wav.split('/')[-1]
             if fm != 16000:
                 raise ValueError('16kHz required! Test file is different')
-            wave = (2./65535.) * (wav_data.astype(np.float32) - 32767) + 1.
+            #wave = (2./65535.) * (wav_data.astype(np.float32) - 32767) + 1.
+            wave = wav_data.astype(np.float32)
             if FLAGS.preemph  > 0:
                 print('preemph test wave with {}'.format(FLAGS.preemph))
                 x_pholder, preemph_op = pre_emph_test(FLAGS.preemph, wave.shape[0])

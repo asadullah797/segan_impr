@@ -47,4 +47,4 @@
 
 
 echo 'PREPARING TRAINING DATA...'
-python3 make_tfrecords.py --force-gen 
+python make_tfrecords.py --force-gen 

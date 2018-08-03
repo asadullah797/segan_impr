@@ -141,15 +141,15 @@ class SEGAN(Model):
             # create the nodes to load for input pipeline
             filename_queue = tf.train.string_input_producer([self.e2e_dataset])
             self.get_wav, self.get_noisy = read_and_decode(filename_queue,
-                                                           2 ** 14)
+                                                           1.0)
         # load the data to input pipeline
         wavbatch, \
         noisybatch = tf.train.shuffle_batch([self.get_wav,
                                              self.get_noisy],
                                              batch_size=self.batch_size,
                                              num_threads=2,
-                                             capacity=100 + 3 * self.batch_size,
-                                             min_after_dequeue=100,
+                                             capacity=1000 + 3 * self.batch_size,
+                                             min_after_dequeue=1000,
                                              name='wav_and_noisy')
         if gpu_idx == 0:
             self.Gs = []
@@ -187,7 +187,7 @@ class SEGAN(Model):
             # make a dummy copy of discriminator to have variables and then
             # be able to set up the variable reuse for all other devices
             # merge along channels and this would be a real batch
-            dummy_joint = tf.concat(axis=2, values=[wavbatch, noisybatch])
+            dummy_joint = tf.concat(values=[wavbatch, noisybatch], axis=2)
             dummy = discriminator(self, dummy_joint,
                                   reuse=False)
 
@@ -197,8 +197,8 @@ class SEGAN(Model):
         self.zs.append(z)
 
         # add new dimension to merge with other pairs
-        D_rl_joint = tf.concat(axis=2, values=[wavbatch, noisybatch])
-        D_fk_joint = tf.concat(axis=2, values=[G, noisybatch])
+        D_rl_joint = tf.concat(values=[wavbatch, noisybatch], axis=2)
+        D_fk_joint = tf.concat(values=[G, noisybatch], axis=2)
         # build rl discriminator
         d_rl_logits = discriminator(self, D_rl_joint, reuse=True)
         # build fk G discriminator
@@ -454,20 +454,22 @@ class SEGAN(Model):
                              self.zs[0]:sample_z}
                     canvas_w = self.sess.run(self.Gs[0],
                                              feed_dict=fdict)
-                    swaves = sample_wav
-                    sample_dif = sample_wav - sample_noisy
-                    for m in range(min(20, canvas_w.shape[0])):
-                        print('w{} max: {} min: {}'.format(m, np.max(canvas_w[m]), np.min(canvas_w[m])))
+                    #swaves = sample_wav
+                    #sample_dif = sample_wav - sample_noisy
+                    #for m in range(min(20, canvas_w.shape[0])):
+                    #    print('w{} max: {} min: {}'.format(m, np.max(canvas_w[m]), np.min(canvas_w[m])))
                         # wavfile.write(os.path.join(save_path, 'sample_{}-{}.wav'.format(counter, m)), 16000, canvas_w[m])
                         # if not os.path.exists(os.path.join(save_path, 'gtruth_{}.wav'.format(m))):
                         #     wavfile.write(os.path.join(save_path, 'gtruth_{}.wav'.format(m)), 16000, swaves[m])
                         #     wavfile.write(os.path.join(save_path, 'noisy_{}.wav'.format(m)), 16000, sample_noisy[m])
                         #     wavfile.write(os.path.join(save_path, 'dif_{}.wav'.format(m)), 16000, sample_dif[m])
-                        np.savetxt(os.path.join(save_path, 'd_rl_losses.txt'), d_rl_losses)
-                        np.savetxt(os.path.join(save_path, 'd_fk_losses.txt'), d_fk_losses)
+                    np.savetxt(os.path.join(save_path, 'd_rl_losses.txt'), d_rl_losses)
+                    np.savetxt(os.path.join(save_path, 'd_fk_losses.txt'), d_fk_losses)
                         #np.savetxt(os.path.join(save_path, 'd_nfk_losses.txt'), d_nfk_losses)
-                        np.savetxt(os.path.join(save_path, 'g_adv_losses.txt'), g_adv_losses)
-                        np.savetxt(os.path.join(save_path, 'g_l1_losses.txt'), g_l1_losses)
+                    np.savetxt(os.path.join(save_path, 'g_adv_losses.txt'), g_adv_losses)
+                    np.savetxt(os.path.join(save_path, 'g_l1_losses.txt'), g_l1_losses)
+                    np.savetxt(os.path.join(savetxt), 'g_loss.txt', g_loss)
+                    np.savetxt(os.path.join(savetxt), 'd_loss.txt', d_loss)
 
                 if batch_idx >= int(num_batches):
                     curr_epoch += 1
